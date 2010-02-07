@@ -22,11 +22,11 @@ use XML::LibXML qw(:all);
 
 =head1 VERSION
 
-0.01
+0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 DESCRIPTION
 
@@ -478,7 +478,7 @@ L<http://www.perlrdf.org/>.
 
 Toby Inkster E<lt>tobyink@cpan.orgE<gt>.
 
-=head1 COPYRIGHT
+=head1 COPYRIGHT AND LICENCE
 
 Copyright 2010 Toby Inkster
 

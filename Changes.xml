@@ -21,6 +21,21 @@
     <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.01</revision>
     <rdfs:comment xml:lang="en">Original version</rdfs:comment>
   </Version>
+  <Version rdf:about="http://search.cpan.org/dist/HTML-HTML5-Microdata-ToRDFa/#v_0_02">
+    <dcs:changeset>
+      <rdf:Description>
+        <dcs:item>
+          <dcs:Bugfix>
+            <rdfs:label xml:lang="en">Correct dependencies in Makefile.PL</rdfs:label>
+          </dcs:Bugfix>
+        </dcs:item>
+        <dcs:versus rdf:resource="http://search.cpan.org/dist/HTML-HTML5-Microdata-ToRDFa/#v_0_01"/>
+      </rdf:Description>
+    </dcs:changeset>
+    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-02-07</dc:issued>
+    <file-release rdf:resource="http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Microdata-ToRDFa-0.02.tar.gz"/>
+    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.02</revision>
+  </Version>
   <Project rdf:about="http://search.cpan.org/dist/HTML-HTML5-Microdata-ToRDFa/#project">
     <bug-database rdf:resource="http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Microdata-ToRDFa"/>
     <created rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-01-29</created>
@@ -33,6 +48,7 @@
     <name>HTML-HTML5-Microdata-ToRDFa</name>
     <programming-language>Perl</programming-language>
     <release rdf:resource="http://search.cpan.org/dist/HTML-HTML5-Microdata-ToRDFa/#v_0_01"/>
+    <release rdf:resource="http://search.cpan.org/dist/HTML-HTML5-Microdata-ToRDFa/#v_0_02"/>
     <repository>
       <SVNRepository>
         <browse rdf:resource="http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Microdata-ToRDFa/"/>
