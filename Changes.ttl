@@ -25,7 +25,7 @@ my:v_0_01
 	a               :Version ;
 	dc:issued       "2010-01-29"^^xsd:date ;
 	:revision       "0.01"^^xsd:string ;
-	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Microdata-ToRDFa-0.01.tar.gz> ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Microdata-ToRDFa-0.01.tar.gz> ;
 	rdfs:comment    "Original version"@en .
 
 my:v_0_02
@@ -33,10 +33,24 @@ my:v_0_02
 	a               :Version ;
 	dc:issued       "2010-02-07"^^xsd:date ;
 	:revision       "0.02"^^xsd:string ;
-	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Microdata-ToRDFa-0.02.tar.gz> ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Microdata-ToRDFa-0.02.tar.gz> ;
 	dcs:changeset [
 		dcs:versus my:v_0_01 ;
 		dcs:item [ rdfs:label "Correct dependencies in Makefile.PL"@en ; a dcs:Bugfix ]
+		] .
+
+my:v_0_030
+
+	a               :Version ;
+	rdfs:label      "We're not dead yet!"@en ;
+	dc:issued       "2011-02-09"^^xsd:date ;
+	:revision       "0.030"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Microdata-ToRDFa-0.030.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0_02 ;
+		dcs:item [ rdfs:label "Copyright 2011."@en ; a dcs:Update, dcs:Documentation ] ;
+		dcs:item [ rdfs:label "Use RDF::Prefix to perform URI->CURIE conversion. It doesn't yet do a fantastic job, but it can evolve more rapidly on its own."@en ] ;
+		dcs:item [ rdfs:label "Use HTML::HTML5::Writer for output - it outputs more text/html-compatible XHTML than XML::LibXML can on its own."@en ]
 		] .
 
 #############################################################
@@ -57,7 +71,7 @@ my:project
 	:tester         toby:i ;
 	:created        "2010-01-29"^^xsd:date ;
 	:license        <http://dev.perl.org/licenses/> ;
-	:release        my:v_0_01 , my:v_0_02 .
+	:release        my:v_0_01 , my:v_0_02 , my:v_0_030 .
 
 #############################################################
 

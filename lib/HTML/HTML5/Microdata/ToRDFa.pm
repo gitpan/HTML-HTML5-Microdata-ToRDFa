@@ -17,16 +17,12 @@ use strict;
 
 use Digest::SHA1 qw(sha1_hex);
 use HTML::HTML5::Microdata::Parser 0.02;
+use HTML::HTML5::Writer;
+use RDF::Prefixes;
 use URI::Escape;
 use XML::LibXML qw(:all);
 
-=head1 VERSION
-
-0.02
-
-=cut
-
-our $VERSION = '0.02';
+our $VERSION = '0.030';
 
 =head1 DESCRIPTION
 
@@ -54,22 +50,14 @@ then this module will fetch $baseuri to obtain the document to be converted.
 
 sub new
 {
-	my $class = shift;
-	my $html  = shift;
-	my $base  = shift;
+	my ($class, $html, $base) = @_;
 	
 	my $self  = bless { 'bnodes'=>0, 'dom'=>undef, 'parser'=>undef, 'prefix'=>{} }, $class;
 	
 	$self->{'parser'} = HTML::HTML5::Microdata::Parser->new($html, $base);
+	$self->{'prefix'} = RDF::Prefixes->new;
 	$self->{'dom'}    = $self->{'parser'}->dom;
-	
-	while (<DATA>)
-	{
-		chomp;
-		my ($prefix, $expand) = split /\t/;
-		$self->{'prefix'}->{$expand} = $prefix;
-	}
-	
+		
 	return $self;
 }
 
@@ -86,11 +74,25 @@ necessarily valid XHTML.
 
 sub get_string
 {
-	my $self = shift;
-	return q(<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">)
-		. "\r\n"
-		. $self->get_dom->documentElement->toString
-		. "\r\n";
+	my ($self, %options) = @_;
+	
+	my $advertisement;
+	$advertisement = sprintf("\n<!--\n\t%s/%s\n\t%s/%s\n\t%s/%s\n\t%s/%s\n\t%s/%s\n -->\n",
+		'HTML::HTML5::Microdata::ToRDFa'  => $HTML::HTML5::Microdata::ToRDFa::VERSION,
+		'HTML::HTML5::Microdata::Parser'  => $HTML::HTML5::Microdata::Parser::VERSION,
+		'HTML::HTML5::Writer'             => $HTML::HTML5::Writer::VERSION,
+		'XML::LibXML'                     => $XML::LibXML::VERSION,
+		'RDF::Prefixes'                   => $RDF::Prefixes::VERSION,
+		)
+		unless $options{no_advert};
+	
+	return HTML::HTML5::Writer
+		->new(
+			markup   => 'xhtml',
+			polyglot => 1,
+			doctype  => HTML::HTML5::Writer::DOCTYPE_XHTML_RDFA10 . $advertisement,
+			)
+		->document($self->get_dom);
 }
 
 =item C<< $rdfa->get_dom >>
@@ -106,7 +108,7 @@ methods is wasteful.
 
 sub get_dom
 {
-	my $self  = shift;
+	my ($self) = @_;
 	my $clone;
 	
 	# Is there a better way to clone an XML::LibXML::Document?
@@ -122,11 +124,7 @@ sub get_dom
 
 sub _process_element
 {
-	my $self    = shift;
-	my $elem    = shift;
-	my $subject = shift;
-	my $rdfa_subject = shift;
-	
+	my ($self, $elem, $subject, $rdfa_subject) = @_;	
 	my ($new_subject, $new_rdfa_subject);
 	
 	if ($elem->hasAttribute('itemscope'))
@@ -357,29 +355,17 @@ sub _process_element
 
 sub _split
 {
-	my $self = shift;
-	my $uri  = shift;
+	my ($self, $uri) = @_;
 	
-	my ($expand, $suffix) = ($uri =~ m'^(.+?)([^/#]+)$');
-	unless (length $expand and length $suffix)
-	{
-		$suffix = '';
-		$expand = $uri;
-	}
+	my $curie = $self->{prefix}->get_curie($uri);
+	my ($prefix, $suffix) = split /:/, $curie, 2;
 	
-	unless (defined $self->{'prefix'}->{$expand})
-	{
-		$self->{'prefix'}->{$expand} = 'ns-'.(substr sha1_hex($expand), 0, 8);
-	}
-	
-	return ($expand, $self->{'prefix'}->{$expand}, $suffix);
+	return ($self->{prefix}->to_hashref->{$prefix}, $prefix, $suffix);
 }
 
 sub _super_split
 {
-	my $self = shift;
-	my $elem = shift;
-	my $str  = shift;
+	my ($self, $elem, $str) = @_;
 	
 	my $type = $self->_get_node_type( $self->_get_orig_node($elem) );
 	
@@ -412,8 +398,7 @@ sub _super_split
 
 sub _get_orig_node
 {
-	my $self = shift;
-	my $node = shift;
+	my ($self, $node) = @_;
 	
 	my @matches = $self->{'dom'}->documentElement->findnodes( $node->nodePath );
 	return $matches[0];
@@ -421,8 +406,7 @@ sub _get_orig_node
 
 sub _get_node_type
 {
-	my $self = shift;
-	my $node = shift;
+	my ($self, $node) = @_;
 	
 	return undef unless $node;
 	return undef unless $node->nodeType == XML_ELEMENT_NODE;
@@ -440,9 +424,8 @@ sub _get_node_type
 
 sub _bnode
 {
-	my $self    = shift;
-	my $rv      = sprintf('_:HTMLAutoNode%03d', $self->{bnodes}++);
-	return $rv;
+	my ($self) = @_;
+	return sprintf('_:HTMLAutoNode%03d', $self->{bnodes}++);
 }
 
 1;
@@ -480,7 +463,7 @@ Toby Inkster E<lt>tobyink@cpan.orgE<gt>.
 
 =head1 COPYRIGHT AND LICENCE
 
-Copyright 2010 Toby Inkster
+Copyright 2010-2011 Toby Inkster
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

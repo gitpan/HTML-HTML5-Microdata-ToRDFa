@@ -6,9 +6,6 @@ SYNOPSIS
      my $rdfa = HTML::HTML5::Microdata::ToRDFa->new($html, $baseuri);
      print $rdfa->get_string;
 
-VERSION
-    0.02
-
 DESCRIPTION
     This module may be used to convert HTML documents marked up with
     Microdata into XHTML+RDFa (which is more widely implemented by consuming
@@ -51,7 +48,7 @@ AUTHOR
     Toby Inkster <tobyink@cpan.org>.
 
 COPYRIGHT AND LICENCE
-    Copyright 2010 Toby Inkster
+    Copyright 2010-2011 Toby Inkster
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
