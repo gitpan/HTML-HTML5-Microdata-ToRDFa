@@ -8,13 +8,13 @@ SYNOPSIS
 
 DESCRIPTION
     This module may be used to convert HTML documents marked up with
-    Microdata into XHTML+RDFa (which is more widely implemented by consuming
-    software).
+    Microdata into XHTML+RDFa 1.0 (which is more widely implemented by
+    consuming software).
 
     If the input document uses a mixture of Microdata and RDFa, the
     semantics of the output document may be incorrect.
 
-  Constructors
+  Constructor
     "$rdfa = HTML::HTML5::Microdata::ToRDFa->new($html, $baseuri)"
         $html may be an HTML document (as a string) or an
         XML::LibXML::Document object.
@@ -52,4 +52,9 @@ COPYRIGHT AND LICENCE
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
+
+DISCLAIMER OF WARRANTIES
+    THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+    WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+    MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 

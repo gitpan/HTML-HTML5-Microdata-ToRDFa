@@ -1,82 +1,56 @@
 package HTML::HTML5::Microdata::ToRDFa;
 
-=head1 NAME
-
-HTML::HTML5::Microdata::ToRDFa - rewrite HTML5+Microdata into XHTML+RDFa
-
-=head1 SYNOPSIS
-
- use HTML::HTML5::Microdata::ToRDFa;
- my $rdfa = HTML::HTML5::Microdata::ToRDFa->new($html, $baseuri);
- print $rdfa->get_string;
-
-=cut
-
-use 5.008;
+use 5.010;
 use strict;
 
-use Digest::SHA1 qw(sha1_hex);
-use HTML::HTML5::Microdata::Parser 0.02;
-use HTML::HTML5::Writer;
-use RDF::Prefixes;
-use URI::Escape;
-use XML::LibXML qw(:all);
+use HTML::HTML5::Microdata::Parser 0.100 qw();
+use HTML::HTML5::Writer 0 qw();
+use RDF::Prefixes 0.002 qw();
+use Scalar::Util 0 qw(blessed);
+use XML::LibXML 1.70 qw(:all);
 
-our $VERSION = '0.030';
-
-=head1 DESCRIPTION
-
-This module may be used to convert HTML documents marked up with Microdata
-into XHTML+RDFa (which is more widely implemented by consuming software).
-
-If the input document uses a mixture of Microdata and RDFa, the semantics of the
-output document may be incorrect.
-
-=head2 Constructors
-
-=over 4
-
-=item C<< $rdfa = HTML::HTML5::Microdata::ToRDFa->new($html, $baseuri) >>
-
-$html may be an HTML document (as a string) or an XML::LibXML::Document
-object.
-
-$baseuri is the base URI for resolving relative URI references. If $html is undefined,
-then this module will fetch $baseuri to obtain the document to be converted.
-
-=back
-
-=cut
+BEGIN {
+	$HTML::HTML5::Microdata::ToRDFa::AUTHORITY = 'cpan:TOBYINK';
+	$HTML::HTML5::Microdata::ToRDFa::VERSION   = '0.100';
+}
 
 sub new
 {
-	my ($class, $html, $base) = @_;
+	my ($class, $html, $base, %options) = @_;
 	
-	my $self  = bless { 'bnodes'=>0, 'dom'=>undef, 'parser'=>undef, 'prefix'=>{} }, $class;
-	
-	$self->{'parser'} = HTML::HTML5::Microdata::Parser->new($html, $base);
-	$self->{'prefix'} = RDF::Prefixes->new;
-	$self->{'dom'}    = $self->{'parser'}->dom;
+	my $self = bless {
+		bnodes    => 0,
+		dom       => undef,
+		parser    => undef,
+		prefix    => {},
+		}, $class;
+		
+	my $popts = { strategy => ($options{strategy} // 'HTML::HTML5::Microdata::Strategy::Heuristic') };
+	$self->{parser}   = HTML::HTML5::Microdata::Parser->new($html, $base, $popts);
+	$self->{prefix}   = RDF::Prefixes->new;
+	$self->{dom}      = $self->{parser}->dom;
+	$self->{strategy} = do
+		{
+			my $S = $options{strategy}
+				// 'HTML::HTML5::Microdata::Strategy::Heuristic';
+			if (ref $S eq 'CODE')
+				{ $S; }
+			elsif (blessed($S) and $S->can('generate_uri'))
+				{ sub { return $S->generate_uri(@_); } }
+			elsif (length "$S")
+				{ my $K = "$S"; sub { return $K->new->generate_uri(@_); } }
+			else
+				{ sub { return undef } }
+		};
 		
 	return $self;
 }
-
-=head2 Public Methods
-
-=over 4
-
-=item C<< $rdfa->get_string >>
-
-Get the document converted to RDFa as a string. This will be well-formed XML, but not
-necessarily valid XHTML.
-
-=cut
 
 sub get_string
 {
 	my ($self, %options) = @_;
 	
-	my $advertisement;
+	my $advertisement = "\n";
 	$advertisement = sprintf("\n<!--\n\t%s/%s\n\t%s/%s\n\t%s/%s\n\t%s/%s\n\t%s/%s\n -->\n",
 		'HTML::HTML5::Microdata::ToRDFa'  => $HTML::HTML5::Microdata::ToRDFa::VERSION,
 		'HTML::HTML5::Microdata::Parser'  => $HTML::HTML5::Microdata::Parser::VERSION,
@@ -86,25 +60,19 @@ sub get_string
 		)
 		unless $options{no_advert};
 	
+	my $markup  = $options{markup} // 'xhtml';
+	my $doctype = lc $markup eq 'html'
+		? HTML::HTML5::Writer::DOCTYPE_HTML5
+		: HTML::HTML5::Writer::DOCTYPE_XHTML_RDFA10;
+	
 	return HTML::HTML5::Writer
 		->new(
-			markup   => 'xhtml',
+			markup   => $markup,
 			polyglot => 1,
-			doctype  => HTML::HTML5::Writer::DOCTYPE_XHTML_RDFA10 . $advertisement,
+			doctype  => $doctype.$advertisement,
 			)
 		->document($self->get_dom);
 }
-
-=item C<< $rdfa->get_dom >>
-
-Get the document converted to XHTML+RDFa as an L<XML::LibXML::Document>
-object.
-
-Note that each time C<get_string> and C<get_dom> are called, the 
-conversion process is run from scratch. Repeatedly calling these 
-methods is wasteful.
-
-=cut
 
 sub get_dom
 {
@@ -254,7 +222,7 @@ sub _process_element
 		if ($elem->hasAttribute('itemtype'))
 		{
 			my $new = $elem->addNewChild('http://www.w3.org/1999/xhtml', 'span');
-			$new->setAttribute('class', 'microdata-to-rdfa--rdftype');
+			$new->setAttribute('class', 'microdata-to-rdfa--itemtype');
 			
 			my ($expand, $prefix, $suffix) = $self->_split($elem->getAttribute('itemtype'));			
 			$new->setAttribute('resource' => "[$prefix:$suffix]");
@@ -374,23 +342,16 @@ sub _super_split
 	
 	foreach my $p (@props)
 	{
-		if ($p =~ /:/)
-		{
-			my ($expand, $prefix, $suffix) = $self->_split($p);
-			$elem->setAttribute("xmlns:$prefix" => $expand);
-			push @rv, "$prefix:$suffix";
-		}
+		my $predicate_uri = $self->{strategy}->(
+			name     => $p,
+			type     => $type,
+			element  => $elem,
+			prefix_empty => 'tag:buzzword.org.uk,2011:md2rdfa:',
+			);
 		
-		elsif (defined $type and length $p)
-		{
-			my $_p = $type;
-			$_p .= '#' unless $_p =~ /#/;
-			$_p .= ':';
-			$_p  = "http://www.w3.org/1999/xhtml/microdata#" . uri_escape($_p . uri_escape($p));
-			my ($expand, $prefix, $suffix) = $self->_split($_p);
-			$elem->setAttribute("xmlns:$prefix" => $expand);
-			push @rv, "$prefix:$suffix";
-		}
+		my ($expand, $prefix, $suffix) = $self->_split($predicate_uri);
+		$elem->setAttribute("xmlns:$prefix" => $expand);
+		push @rv, "$prefix:$suffix";
 	}
 	
 	return join ' ', @rv;
@@ -435,15 +396,68 @@ dcterms	http://purl.org/dc/terms/
 eg	http://example.com/
 foaf	http://xmlns.com/foaf/0.1/
 md	http://www.w3.org/1999/xhtml/microdata#
+og	http://ogp.me/ns#
 owl	http://www.w3.org/2002/07/owl#
 rdf	http://www.w3.org/1999/02/22-rdf-syntax-ns#
 rdfs	http://www.w3.org/2000/01/rdf-schema#
 rss	http://purl.org/rss/1.0/
+schema	http://schema.org/
 sioc	http://rdfs.org/sioc/ns#
 skos	http://www.w3.org/2004/02/skos/core#
+v	http://rdf.data-vocabulary.org/#
 xhv	http://www.w3.org/1999/xhtml/vocab#
 xsd	http://www.w3.org/2001/XMLSchema#
 __END__
+
+=head1 NAME
+
+HTML::HTML5::Microdata::ToRDFa - rewrite HTML5+Microdata into XHTML+RDFa
+
+=head1 SYNOPSIS
+
+ use HTML::HTML5::Microdata::ToRDFa;
+ my $rdfa = HTML::HTML5::Microdata::ToRDFa->new($html, $baseuri);
+ print $rdfa->get_string;
+
+=head1 DESCRIPTION
+
+This module may be used to convert HTML documents marked up with Microdata
+into XHTML+RDFa 1.0 (which is more widely implemented by consuming software).
+
+If the input document uses a mixture of Microdata and RDFa, the semantics of the
+output document may be incorrect.
+
+=head2 Constructor
+
+=over
+
+=item C<< $rdfa = HTML::HTML5::Microdata::ToRDFa->new($html, $baseuri) >>
+
+$html may be an HTML document (as a string) or an XML::LibXML::Document
+object.
+
+$baseuri is the base URI for resolving relative URI references. If $html is undefined,
+then this module will fetch $baseuri to obtain the document to be converted.
+
+=back
+
+=head2 Public Methods
+
+=over
+
+=item C<< $rdfa->get_string >>
+
+Get the document converted to RDFa as a string. This will be well-formed XML, but not
+necessarily valid XHTML.
+
+=item C<< $rdfa->get_dom >>
+
+Get the document converted to XHTML+RDFa as an L<XML::LibXML::Document>
+object.
+
+Note that each time C<get_string> and C<get_dom> are called, the 
+conversion process is run from scratch. Repeatedly calling these 
+methods is wasteful.
 
 =back
 
@@ -468,4 +482,9 @@ Copyright 2010-2011 Toby Inkster
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
-=cut
+=head1 DISCLAIMER OF WARRANTIES
+
+THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+

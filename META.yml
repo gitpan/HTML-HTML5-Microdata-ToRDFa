@@ -4,32 +4,34 @@ author:
   - 'Toby Inkster <tobyink@cpan.org>'
 build_requires:
   ExtUtils::MakeMaker: 6.42
-  Module::Signature: 0.66
   Test::More: 0.61
 configure_requires:
   ExtUtils::MakeMaker: 6.42
 distribution_type: module
-generated_by: 'Module::Install version 1.00'
+generated_by: 'Module::Install version 1.02'
+keywords: []
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
+module_name: HTML::HTML5::Microdata::ToRDFa
 name: HTML-HTML5-Microdata-ToRDFa
 no_index:
   directory:
+    - examples
     - inc
     - t
+    - xt
 requires:
-  Digest::SHA1: 0
-  HTML::HTML5::Microdata::Parser: 0.02
+  HTML::HTML5::Microdata::Parser: 0.100
   HTML::HTML5::Writer: 0
-  RDF::Prefixes: 0
-  URI::Escape: 0
-  XML::LibXML: 1.60
-  perl: 5.8.0
+  RDF::Prefixes: 0.002
+  Scalar::Util: 0
+  XML::LibXML: 1.70
+  perl: 5.10.0
 resources:
   bugtracker: http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Microdata-ToRDFa
-  homepage: http://search.cpan.org/dist/HTML-HTML5-Microdata-ToRDFa/
+  homepage: https://metacpan.org/release/HTML-HTML5-Microdata-ToRDFa
   license: http://dev.perl.org/licenses/
-  repository: http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Microdata-ToRDFa/
-version: 0.030
+  repository: http://goddamn.co.uk/svn-web/perlmods/browse/HTML-HTML5-Microdata-ToRDFa/
+version: 0.100
